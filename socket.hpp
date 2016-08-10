@@ -1,15 +1,5 @@
-#ifndef SOCKET
-#define SOCKET
-
-#include <string>
-
-struct Socket
-{
-  int fd;
-
-  int open(std::string address, unsigned int port);
-  int write(std::string m);
-  std::string read();
-};
-
-#endif // SOCKET
+#ifdef WINDOWS
+#include "socket_windows.hpp"
+#elif LINUX
+#include "socket_unix.hpp"
+#endif // PLATFORM

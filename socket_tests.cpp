@@ -40,7 +40,7 @@ namespace tests
       buf += s.read();
       if (buf.find("hello there\n") < buf.length())
       {
-        std::cout << "found 'hello there\n'." << std::endl;
+        std::cout << "found 'hello there'." << std::endl;
         return 0;
       }
 

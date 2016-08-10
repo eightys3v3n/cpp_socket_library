@@ -1,4 +1,4 @@
-gcc=gcc --std=c++17 -Wall -Wextra
+gcc=gcc --std=c++17 -Wall -Wextra -DLINUX
 ar=ar crf
 
 all: socket_test
