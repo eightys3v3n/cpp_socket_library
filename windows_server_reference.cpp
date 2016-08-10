@@ -11,10 +11,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// used for initialize()
 WSADATA wsaData;
+
 int result;
+
+// the socket that the server is listening on. this is only used to accept new clients.
 SOCKET listenSocket = INVALID_SOCKET;
+
+// this is assigned when a client connects to the listenSocket. use this to talk to the client.
 SOCKET clientSocket = INVALID_SOCKET;
+
 struct addrinfo *addressInfo = 0;
 struct addrinfo hints;
 char buffer[ BUFFER_LENGTH ];
@@ -26,8 +33,10 @@ bool initialize()
   if ( result != 0 )
   {
     std::cout << "WSAStartup failed with error: " << result << std::endl;
-    return 1;
+    return true;
   }
+
+  return false;
 }
 
 bool listen()
@@ -133,11 +142,14 @@ bool closeConnection()
 
 bool receive()
 {
- // Receive until the peer shuts down the connection
+ // receive until the peer shuts down the connection
   do
   {
-    // listen to the other guy's shrill screams.
-    result = recv(clientSocket, buffer, BUFFER_LENGTH, 0);
+    // read what the client sent us, result is the number of bytes that were read if it's > 0.
+    result = recv(clientSocket, // the socket that is connected to the client.
+      buffer, // the character array to store the received stuff in.
+      BUFFER_LENGTH, // the number of characters to read.
+      0); // no idea what this is for.
 
     if (result > 0)
     {
@@ -146,7 +158,7 @@ bool receive()
     else if (result == 0)
       std::cout << "received nothing, closing" << std::endl;
 
-    // some windows error code shit
+    // some windows error code stuff
     else
     {
       printf("recv failed with error: %d\n", WSAGetLastError());
@@ -158,7 +170,6 @@ bool receive()
 
 bool send()
 {
-  // yell some stuff back at said crazy guy.
   result = send( clientSocket, buffer, result, 0 );
   if (result == SOCKET_ERROR)
   {
@@ -172,12 +183,22 @@ bool send()
 
 int main()
 {
+  // i'm not sure what this is for.
   initialize();
+
+  // opens a socket and starts listening on 0.0.0.0:PORT
   listen();
+
+  // waits for a client to connect, then creates a socket with that client called clientSocket.
   accept();
+
+  // read everything the client has sent.
   receive();
+
+  // send a message back to the client.
   send();
 
+  // related to the initialize function.
   WSACleanup();
   return 0;
 }
