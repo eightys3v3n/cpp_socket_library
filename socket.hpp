@@ -1,3 +1,6 @@
+#ifndef SOCKET_HPP
+#define SOCKET_HPP
+
 #include <string>
 #ifdef WINDOWS
 #include <windows.h>
@@ -7,6 +10,7 @@ struct Socket
 {
 	#ifdef WINDOWS
 	SOCKET s = INVALID_SOCKET;
+	long unsigned* mode;
 	#else
 	int fd;
 	#endif // PLATFORM
@@ -21,3 +25,5 @@ namespace tests
 {
   int socket();
 }
+
+#endif // SOCKET_HPP

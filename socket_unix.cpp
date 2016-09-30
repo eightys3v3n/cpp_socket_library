@@ -95,7 +95,7 @@ std::string Socket::read()
 
 int Socket::close()
 {
-  close(fd);
+  ::close(fd);
 
   return 0;
 }

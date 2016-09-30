@@ -8,6 +8,7 @@
 struct Socket
 {
   SOCKET s = INVALID_SOCKET;
+  long unsigned* mode = new long unsigned(1);
 
   int open(std::string address, unsigned int port);
   int write(std::string m);
@@ -77,40 +78,36 @@ int Socket::open(std::string address, unsigned int port)
     return 1;
   }
 
+  ioctlsocket(s,FIONBIO,mode);
+
   return 0;
 }
 
 int Socket::write(std::string m)
 {
-/*  int r = 0;
-
-  r = ::write(fd, m.c_str(), m.length());
-  if (r < 0)
-    return r;
-
-  return 0;*/
-  return 1;
+  int r;
+  r = send(s,m.c_str(),m.length(),0);
+  return r;
 }
 
 std::string Socket::read()
 {
-/*  char buf[4097];
   std::string r = "";
   int e = 0;
 
   while (true)
   {
-    bzero(buf,4097);
-    e = recv(fd,buf,4096,0);
+    char buf[4096] = {};
+    e = recv(s,buf,4096,0);
 
-    if (e == -1)
+    if (e == SOCKET_ERROR)
       break;
 
     r += std::string(buf);
   }
+  r += (char)0;
 
-  return r;*/
-  return "";
+  return r;
 }
 
 int Socket::close()
