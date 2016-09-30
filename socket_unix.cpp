@@ -1,7 +1,3 @@
-#ifdef VERBOSE
-#include <iostream>
-#endif // VERBOSE
-
 #include <string>
 #include <unistd.h>
 #include <sys/types.h>
@@ -12,6 +8,7 @@
 #include <string.h> // bzero()
 #include <netdb.h> // gethostbyname(), bcopy((char *)server->h_addr...
 #include <fcntl.h>
+#include <stdio.h>
 
 struct Socket
 {
@@ -20,6 +17,7 @@ struct Socket
   int open(std::string address, unsigned int port);
   int write(std::string m);
   std::string read();
+  int close();
 };
 
 int Socket::open(std::string address, unsigned int port)
@@ -31,17 +29,17 @@ int Socket::open(std::string address, unsigned int port)
   if (fd < 0)
   {
     #ifdef VERBOSE
-    std::cerr << "failed to create a socket" << std::endl;
+    printf("failed to create a socket\n");
     #endif // VERBOSE
     return 1;
   }
 
-  #warning gethostbyname is DEPRECIATED
+  // depreciated | gethostbyname()
   server = gethostbyname(address.c_str());
   if (server == 0)
   {
     #ifdef VERBOSE
-    std::cerr << "host not found '" + address + "'" << std::endl;
+    printf("host not found \"%s\"\n", address.c_str());
     #endif // VERBOSE
     return 2;
   }
@@ -54,7 +52,7 @@ int Socket::open(std::string address, unsigned int port)
   if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
   {
     #ifdef VERBOSE
-    std::cerr << "coundn't connect to '" + address + ":" << port << "'" << std::endl;
+    printf("coundn't connect to \"%s:%o\"\n", address, port);
     #endif // VERBOSE
     return 3;
   }
@@ -81,25 +79,23 @@ std::string Socket::read()
   std::string r = "";
   int e = 0;
 
-  // keeps reading until the bytes read do not create a string of length 4096; ie there was nothing left to read.
   while (true)
   {
-    bzero(buf, 4097);
-    e = ::read(fd, &buf, 4096);
+    bzero(buf,4097);
+    e = recv(fd,buf,4096,0);
+
+    if (e == -1)
+      break;
 
     r += std::string(buf);
-
-    if (e)
-    {
-      #ifdef VERBOSE
-      std::cerr << "read returned:" << e << std::endl;
-      #endif // VERBOSE
-      return r;
-    }
-
-    if (std::string(buf).length() < 4096)
-      break;
   }
 
   return r;
+}
+
+int Socket::close()
+{
+  close(fd);
+
+  return 0;
 }
