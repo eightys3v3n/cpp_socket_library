@@ -1,5 +1,5 @@
 l=g++ -Wall -Wextra --std=c++17 -DLINUX
-w=x86_64-w64-mingw32-g++ -Wall -Wextra --std=c++17 -static -DWINDOWS
+w=x86_64-w64-mingw32-g++-posix -Wall -Wextra --std=c++17 -static -DWINDOWS
 
 all: socket_tests socket_tests.exe
 
