@@ -3,7 +3,7 @@
 #include "socket.hpp"
 
 
-int main()
+bool test_client()
 {
   std::string buff = "";
   int result;
@@ -18,15 +18,16 @@ int main()
   if (result)
   {
     printf("Failed to connect %d.\n", result);
-    return 1;
+    return true;
   }
   printf("Connected.\n");
 
-  s.send("hello world\n");
-  printf("Sent 'hello world\\n'.");
+  buff = "hello world\n";
+  s.send(buff);
+  printf("Sent '%s'.\n", buff.c_str());
   getchar();
 
-  printf("Please send 7 or more bytes.\n");
+  printf("Please send 7 or more bytes all at once.\n");
   printf("Waiting to receive 4 bytes...\n");
   buff = s.receive(4);
   assert(buff.length() == 4);
@@ -45,5 +46,15 @@ int main()
   s.close();
   printf("Closed socket.\n");
 
-  return 0;
+  return false;
+}
+
+
+// bool test_server() {}
+
+
+int main()
+{
+  if (test_client())
+    return 1;
 }

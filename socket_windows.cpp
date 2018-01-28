@@ -1,23 +1,24 @@
 #include "socket.hpp"
 
 
-int PlatformDependant::get_addr_info(std::string host, unsigned short port, struct addrinfo &ret)
+int PlatformDependant::get_addr_info(std::string host, unsigned short port)
 {
   int result;
   struct addrinfo *addresses = nullptr;
 
   result = getaddrinfo(host.c_str(), std::to_string(port).c_str(), nullptr, &addresses);
-  if (result != 0)
+  if (result == 0)
+  {
+    address = * addresses;
+  }
+  else
   {
     #if VERBOSITY >= 1
-    printf("Failed to getaddrinfo: %d\n", result);
+      printf("Failed to getaddrinfo: %d\n", result);
     #endif
-    return result;
   }
 
-  ret = *addresses;
-
-  return 0;
+  return result;
 }
 
 
@@ -35,7 +36,7 @@ int Socket::connect()
   }
 
   // Resolve the server address and port
-  result = get_addr_info(__host, __port, platform.address);
+  result = platform.get_addr_info(__host, __port);
   if (result != 0)
   {
     printf("get_addr_info failed %d\n", result);
@@ -61,7 +62,7 @@ int Socket::connect()
     closesocket(platform.socket);
     freeaddrinfo(&platform.address);
     platform.socket = INVALID_SOCKET;
-    continue;
+    return 1;
   }
 
   if (platform.socket == INVALID_SOCKET)
@@ -74,6 +75,7 @@ int Socket::connect()
   return 0;
 }
 
+
 int Socket::send(std::string m)
 {
   int result;
@@ -81,24 +83,134 @@ int Socket::send(std::string m)
   return result;
 }
 
-std::string Socket::read()
+
+std::string Socket::receive(unsigned long size)
 {
+  char buff[BUFFER_SIZE+1];
   std::string received = "";
-  int result = 0;
+  int left_to_receive = size;
+  int to_receive = BUFFER_SIZE;
+  int result;
 
-  while (true)
+  while (left_to_receive > 0)
   {
-    char buf[4096] = {};
-    result = recv(platform.socket, buf, 4096, 0);
-    if (result == SOCKET_ERROR)
+    if (left_to_receive < BUFFER_SIZE)
+    {
+      to_receive = left_to_receive;
+    }
+
+    memset(buff, 0, BUFFER_SIZE+1);
+    result = ::recv(platform.socket, buff, to_receive, 0);
+
+    if (result == -1)
+    {
+      #if VERBOSITY >= 2
+        printf("An error occured %d.\n", result);
+      #endif
       break;
+    }
 
-    received += std::string(buf);
+    left_to_receive -= result;
+    received += std::string(buff);
+    #if VERBOSITY >= 3
+      printf("Received %d bytes.\n", result);
+    #endif
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(platform.BLOCKING_RECEIVE_DELAY));
   }
-  received += (char)0;
 
+  #if VERBOSITY >= 2
+    printf("Received '%s'.\n", received.c_str());
+  #endif
   return received;
 }
+
+
+std::string Socket::read(unsigned long size)
+{
+  char buff[BUFFER_SIZE+1];
+  std::string strbuff = "";
+  std::string received = "";
+  int left_to_receive;
+  int to_receive = BUFFER_SIZE;
+  int result;
+
+  if (size == 0) // receive all available
+  {
+    left_to_receive = BUFFER_SIZE+1;
+    #if VERBOSITY >= 2
+      printf("Reading all received bytes...\n");
+    #endif
+  }
+  else // receive only size bytes
+  {
+    left_to_receive = size;
+    #if VERBOSITY >= 2
+      printf("Reading %lu bytes...\n", size);
+    #endif
+  }
+
+  while (left_to_receive > 0)
+  {
+    if (left_to_receive < BUFFER_SIZE)
+    {
+      to_receive = left_to_receive;
+    }
+
+    memset(buff, 0, BUFFER_SIZE+1);
+    result = ::recv(platform.socket, buff, to_receive, 0);
+
+    if (result == -1 and errno != EWOULDBLOCK)
+    {
+      #if VERBOSITY >= 2
+        printf("An error occured %d.\n", errno);
+      #endif
+      break;
+    }
+    else if (result == -1 and errno == EWOULDBLOCK)
+    {
+      #if VERBOSITY >= 2
+        printf("Reached end-of-stream; socket has been closed and all data received.\n");
+      #endif
+      left_to_receive = 0;
+    }
+    else if (size == 0)
+    {
+      left_to_receive = BUFFER_SIZE+1;
+    }
+
+    strbuff = std::string(buff);
+    left_to_receive -= strbuff.length();
+    received += strbuff;
+    #if VERBOSITY >= 3
+      printf("Received %lu bytes.\n", strbuff.length());
+    #endif
+  }
+
+  #if VERBOSITY >= 2
+    printf("Received '%s'.\n", received.c_str());
+  #endif
+  return received;
+}
+
+// std::string Socket::read(unsigned long size)
+// {
+//   std::string received = "";
+//   int result = 0;
+
+//   while (true)
+//   {
+//     char buf[4096] = {};
+//     result = recv(platform.socket, buf, 4096, 0);
+//     if (result == SOCKET_ERROR)
+//       break;
+
+//     received += std::string(buf);
+//   }
+//   received += (char)0;
+
+//   return received;
+// }
 
 int Socket::close()
 {

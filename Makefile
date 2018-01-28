@@ -1,4 +1,4 @@
-CC_FLAGS=-Wall -Wextra --std=c++17 -DVERBOSITY=0
+CC_FLAGS=-Wall -Wextra --std=c++17 -DVERBOSITY=0 -g
 LINUX_CC=g++
 LINUX_CC_FLAGS=-DLINUX
 WINDOWS_CC=x86_64-w64-mingw32-g++-posix

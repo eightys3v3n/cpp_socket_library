@@ -9,6 +9,7 @@
 #include <map>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 
 #ifdef WINDOWS
   #include <winsock2.h> /** include before windows.h
@@ -18,28 +19,27 @@
   #include <windows.h> // see above
   #include <ws2tcpip.h>
 #elif defined LINUX
+  #include <errno.h>
   #include <unistd.h>
   #include <sys/types.h>
   #include <sys/socket.h>
   #include <netinet/in.h>
-  #include <string.h> // bzero()
+  //#include <string.h> // bzero()
   #include <netdb.h> // gethostbyname(), bcopy((char *)server->h_addr...
   #include <fcntl.h>
   #include <stdio.h>
 #endif
 
 
-#define BUFFER_SIZE 4096
-
-
 struct PlatformDependant
 {
 #ifdef WINDOWS
+  const int BLOCKING_RECEIVE_DELAY = 10;
   SOCKET socket       = INVALID_SOCKET;
   unsigned long mode  = 1;
-  struct addrinfo addr;
+  struct addrinfo address;
 
-  int get_addr_info(std::string host, unsigned short port, struct addrinfo &ret);
+  int get_addr_info(std::string host, unsigned short port);
 #elif defined LINUX
   int fd = 0;
   struct sockaddr address;
@@ -57,6 +57,7 @@ private:
   unsigned short __port = 0;
 
 public:
+  const int BUFFER_SIZE = 4096;
   const std::string host;
   const unsigned short port;
   PlatformDependant platform;
